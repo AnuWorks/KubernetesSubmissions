@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: exercise1-1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: exercise1-1
+  name: token-printer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: token-printer
+  template:
+    metadata:
+      labels:
+        app: token-printer
+    spec:
+      containers:
+      - name: app
+        image: python:3.12-alpine
+        command: ["python3", "-c"]
+        args:
+          - |
+            import secrets, time, datetime, signal, sys
+            token = secrets.token_hex(16)
+            def stop(_s, _f):
+                sys.exit(0)
+            signal.signal(signal.SIGTERM, stop)
+            while True:
+                ts = datetime.datetime.now(datetime.timezone.utc).isoformat()
+                print(f"{ts}: {token}", flush=True)
+                time.sleep(5)
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: exercise1-1
+  name: token-printer
+spec:
+  selector:
+    app: token-printer
+  ports:
+  - port: 80
+    targetPort: 80
